@@ -66,6 +66,16 @@ range 1-60). A module may ask for something slower via `refreshIntervalMs()`;
 it can never ask for faster. `dueForFetch()` mutates switch state, so call it
 exactly once per tick.
 
+**A provider's `refresh()` must call `markFetched(now)` unconditionally, as
+the first thing it does** - not only on the success path. `hasFetched()`
+(`lastFetchMs_ != 0`) is what gates the fetch above; if only success sets it,
+a bad credential or a network error leaves it permanently false, and
+`dueForFetch()` returns true on every single loop tick forever - a retry
+storm, not the configured cadence. This was a real bug (both Claude and
+OpenAI shipped with it) fixed by moving the call to the top of `refresh()`
+instead of the end. Any new provider copying an old one as a template should
+copy the fixed shape, not reintroduce the bug.
+
 ## Buttons (`main.cpp`)
 
 KEY presses accumulate into a burst that closes `DOUBLE_CLICK_MS` (280 ms)
@@ -91,10 +101,33 @@ POST https://auth.openai.com/oauth/token              refresh_token grant
 
 Both usage endpoints are private APIs. Parse defensively: a missing field
 degrades the screen, it does not fail the fetch. Before changing a parser,
-confirm the shape with curl from a computer rather than guessing.
+confirm the shape with curl from a computer rather than guessing - the field
+names below were wrong on the first attempt precisely because they came from
+secondhand research instead of a live response.
 
 `refresh_token` rotates. Automatic renewal is opt-in per account and off by
 default because the device winning a rotation signs the desktop Codex CLI out.
+
+**Confirmed against a live response** (2026-09, Plus plan) - the wham/usage
+windows are nested one level deeper than the secondhand research this was
+originally written from suggested:
+
+```
+rate_limit.primary_window / .secondary_window     (not "primary"/"secondary")
+  { used_percent, limit_window_seconds, reset_after_seconds, reset_at }
+additional_rate_limits[]                           (not flat - nested)
+  { limit_name, metered_feature, normal_model_slug,
+    rate_limit: { primary_window, secondary_window } }
+rate_limit_reset_credits.available_count            manual early-reset credits
+```
+
+Claude: an org returning `five_hour: null, seven_day: null` with a 200 and no
+error is not necessarily broken - it may genuinely be an unused org. Every
+Anthropic login has an auto-created default org named
+`{email}'s Organization`; if the person actually works through a named Team
+org instead, that default one will legitimately show nothing forever. Confirm
+in the claude.ai UI itself (switch to that org, check its own usage page)
+before assuming the parser or the fetch is at fault.
 
 ## Storage (`core/account.cpp`, `core/settings.cpp`)
 
@@ -111,6 +144,72 @@ Two backends, split by size:
 - **Everything small stays in NVS**, namespace `tokenusage`: WiFi (`w<N>s/p`
   plus `wN`), device settings, and the one-int `actIdx` (active account).
 
+## Web UI
+
+WiFi network suggestions (provisioning's setup step and the admin page's WiFi
+section) are rendered as tappable "SSID (N dBm)" buttons that fill the text
+field via a one-line `onclick`, not an HTML `<datalist>`. Datalist is the
+"correct" zero-JS way to do this, but iOS's Captive Network Assistant (the
+mini browser it uses for WiFi setup portals) mostly does not render it at
+all - confirmed on real hardware, not a theoretical concern. The shared
+scan/dedupe/sort logic lives in `net/wifi_scan.{h,cpp}`; the chip-rendering
+and the JS-string escaping it needs live in `WebUi::wifiChips()` /
+`WebUi::jsEscape()` in `web/webui.{h,cpp}`. Both surfaces call the same code;
+don't reintroduce a second copy.
+
+The admin page's WiFi section only scans on an explicit "Scan for networks"
+click, never on page load - the device is already associated at that point,
+and hopping channels to scan causes a brief connectivity hiccup that should
+not happen just from opening the page. Provisioning's captive portal, by
+contrast, scans immediately on open since there is no existing connection to
+disturb.
+
+## Researched, not built
+
+Two things were investigated in depth and deliberately not implemented -
+read this before redoing the research from scratch.
+
+**Claude / OpenAI API remaining credit balance** (the pay-as-you-go developer
+API's prepaid balance, not the subscription usage this firmware already
+shows): confirmed dead end as of 2026-09. Neither vendor exposes this through
+any API, documented or otherwise - both have open feature requests for it on
+their own GitHub repos and the balance is Console/Dashboard-web-UI-only.
+Don't spend time re-searching this; check whether either vendor has since
+shipped the feature request before trying again.
+
+**OpenAI API spend/usage by model** (different from the above - this is
+*already-spent* tracking, which the user considers first-class, not a
+consolation prize): `GET /v1/organization/usage/completions` and `/costs`,
+supports `group_by=model`, time-bucketed. Needs an Admin API key
+(`sk-admin-...`), a different and more privileged credential than the Codex
+module's ChatGPT access token. Not yet verified against a live response -
+get a real Admin key and curl it before writing a parser, same discipline as
+everything else in this file. Would be its own provider type (different
+auth, different data shape from the Codex/ChatGPT subscription module),
+picked up under a name like `openai_api` rather than folded into `openai`.
+
+**GitHub Copilot usage** - personal plan only, by the user's own choice (they
+are not an org owner/billing manager anywhere Copilot is provided, so the
+org-managed mode has no one to serve and should not be built as a stub
+either - don't half-implement it "for later").
+- The endpoint (`GET /users/{username}/settings/billing/premium_request/usage`)
+  needs a **GitHub App** user access token with the `Plan` permission,
+  obtained via OAuth **Device Flow** (same UX shape as `gh auth login`:
+  show a URL and a code, user authorizes in a browser). It does not accept a
+  plain PAT.
+- This is a GitHub App, not a classic OAuth App - the `Plan` permission only
+  exists on GitHub Apps. Registration needs Device Flow enabled, the `Plan`
+  account permission set to read-only, and "Where can this be installed" set
+  to Any account (so anyone building this firmware can device-flow into one
+  shared app registration, not just the maintainer).
+- The org/enterprise-managed-seat endpoints exist but require the caller to
+  be an org owner or billing manager - an ordinary seat holder cannot see
+  their own usage through the API at all, by GitHub's own design. Confirm
+  this hasn't changed before ever building that path.
+- Client ID for such an app is meant to be public (same as `gh`'s own,
+  embedded in its open-source client) - safe to hardcode in source once
+  registered.
+
 ## What not to do
 
 - Do not add a companion app, bridge or local JSONL parsing.
@@ -121,3 +220,13 @@ Two backends, split by size:
 - Do not load a CDN stylesheet or font: the captive portal runs with no
   internet at all.
 - Do not parse timestamps as local time. TZ is pinned to UTC0 at boot.
+
+## Git / publish
+
+Repo: `github.com/AdaHsu/TokenUsage` (private). Licensed **AGPL-3.0** -
+GitHub generated this at repo creation; note it is *not* MIT like the
+upstream project this is structured after, so don't describe the two as
+having the same license. `README.md` / `README.zh-TW.md` are kept in sync
+(English is the source of truth; the Chinese one is a full translation, not
+a summary) and cross-link each other at the top. `images/` holds real
+on-device photos used in both READMEs.
