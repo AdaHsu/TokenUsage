@@ -4,6 +4,7 @@
 #include "../core/registry.h"
 #include "../hal/battery.h"
 #include "../hal/board.h"
+#include "../net/wifi_scan.h"
 #include "../util/timefmt.h"
 #include <WebServer.h>
 #include <WiFi.h>
@@ -20,6 +21,12 @@ WebConfig::Hooks hooks;
 String                 pendingType;
 String                 pendingSettings;
 std::vector<Workspace> pendingWorkspaces;
+
+// Populated only on an explicit "Scan for networks" click, never on a plain
+// page load: the device is already associated when this page is served, and
+// scanning briefly hops channels, causing a small connectivity hiccup that
+// should not happen just from opening the admin page.
+std::vector<ScannedNetwork> scannedWifi;
 
 // Bridges WebServer arguments into the FormSource the modules consume.
 class ServerForm : public FormSource {
@@ -185,13 +192,24 @@ String sectionWifi() {
         s += "</div>";
     }
 
+    // Scanning is opt-in here (unlike the captive portal, which scans as
+    // soon as it opens): the device is already online when this page loads,
+    // and hopping channels to scan briefly interrupts that link, so it
+    // should only happen when asked for.
+    String chips = WebUi::wifiChips(scannedWifi, "newSsid");
+    if (!chips.isEmpty()) {
+        s += "<label>Networks in range</label>" + chips;
+    }
+
     s += "<form method=post action=/wifi/add>";
-    s += "<label>Network name<input name=ssid autocomplete=off required></label>";
+    s += "<label>Network name<input id=newSsid name=ssid autocomplete=off required></label>";
     s += "<label>Password<input type=password name=password autocomplete=off></label>";
-    s += "<div class=actions><button type=submit>Add network</button></div>";
+    s += "<div class=actions><button type=submit>Add network</button>";
+    s += "<a class=\"btn btnGhost\" href=/wifi/scan>Scan for networks</a></div>";
     s += "</form>";
     s += "<p class=hint>Networks are tried top down, by list position rather than signal "
-         "strength. Changes take effect on the next connection attempt.</p>";
+         "strength. Changes take effect on the next connection attempt. Scanning briefly "
+         "interrupts the WiFi link while the radio hops channels.</p>";
     s += "</section>";
     return s;
 }
@@ -550,6 +568,13 @@ void handleAccountMove() {
 
 namespace {
 
+void handleWifiScan() {
+    if (!requireAuth()) return;
+    scannedWifi = WifiScan::scan();
+    Serial.printf("[web] scan found %d network(s)\n", (int)scannedWifi.size());
+    redirectHome();
+}
+
 void handleWifiAdd() {
     if (!requireAuth()) return;
     String ssid = server.arg("ssid");
@@ -624,6 +649,7 @@ void WebConfig::begin(DeviceSettings* settings, Carousel* carousel, const Hooks&
     server.on("/account/addmany",   HTTP_POST, handleAccountAddMany);
     server.on("/account/delete",    HTTP_POST, handleAccountDelete);
     server.on("/account/move",      HTTP_POST, handleAccountMove);
+    server.on("/wifi/scan",         HTTP_GET,  handleWifiScan);
     server.on("/wifi/add",          HTTP_POST, handleWifiAdd);
     server.on("/wifi/delete",       HTTP_POST, handleWifiDelete);
     server.on("/wifi/move",         HTTP_POST, handleWifiMove);

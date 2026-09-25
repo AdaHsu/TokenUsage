@@ -1,4 +1,5 @@
 #include "webui.h"
+#include "../core/provider.h"  // htmlEscape()
 
 const char WebUi::HEAD_META[] =
     "<meta charset=utf-8>"
@@ -79,6 +80,32 @@ String WebUi::brand(const char* badge) {
         s += "<span class=badge>";
         s += badge;
         s += "</span>";
+    }
+    s += "</div>";
+    return s;
+}
+
+String WebUi::jsEscape(const String& s) {
+    String out;
+    out.reserve(s.length() + 4);
+    for (size_t i = 0; i < s.length(); i++) {
+        char c = s[i];
+        if (c == '\\' || c == '\'') out += '\\';
+        out += c;
+    }
+    return out;
+}
+
+String WebUi::wifiChips(const std::vector<ScannedNetwork>& nets, const char* targetInputId) {
+    if (nets.empty()) return String();
+
+    String s = "<div class=actions>";
+    for (const auto& n : nets) {
+        String onclick = "document.getElementById('" + String(targetInputId) + "').value='" +
+                         jsEscape(n.ssid) + "';return false;";
+        s += "<button type=button class=\"btnGhost mini\" onclick=\"";
+        s += htmlEscape(onclick);
+        s += "\">" + htmlEscape(n.ssid) + " (" + String(n.rssi) + " dBm)</button>";
     }
     s += "</div>";
     return s;
