@@ -1,5 +1,7 @@
 # TokenUsage
 
+English | [正體中文](README.zh-TW.md)
+
 A LilyGo T-Display S3 that shows how much of your AI subscriptions you have
 burned through, for as many accounts as you own, and fetches everything
 itself over WiFi. No companion app, no bridge, no CLI running somewhere.
