@@ -6,17 +6,18 @@
 
 一顆按鍵切換帳號；螢幕上正在顯示的那一個，才是唯一會發網路請求的那一個。
 
-```
-+----------------------------------------------------------+
-| *Claude / Work Teams  [TEAMS]        3/6  4:12   [] 87%   |
-+----------------------------------------------------------+
-|  5-hour window                    42%   resets 2h 30m     |
-|  ############...........          On pace                 |
-| --------------------------------------------------------- |
-|  Weekly                           61%   resets 3d 5h      |
-|  ##################.....          Under pace              |
-+----------------------------------------------------------+
-```
+<table>
+<tr>
+<td><img src="images/3388.jpg" width="280" alt="裝置顯示 Claude 個人版 Pro 方案"></td>
+<td><img src="images/3389.jpg" width="280" alt="裝置顯示 Claude Teams 組織"></td>
+<td><img src="images/3387.jpg" width="280" alt="裝置顯示 Codex Plus 方案"></td>
+</tr>
+<tr>
+<td align="center">Claude · 個人版（Pro）</td>
+<td align="center">Claude · Teams</td>
+<td align="center">Codex · Plus</td>
+</tr>
+</table>
 
 ## 這個裝置做了什麼
 

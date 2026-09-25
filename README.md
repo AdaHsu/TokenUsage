@@ -9,17 +9,18 @@ itself over WiFi. No companion app, no bridge, no CLI running somewhere.
 One button walks the accounts; whichever one is on screen is the only one
 that ever touches the network.
 
-```
-+----------------------------------------------------------+
-| *Claude / Work Teams  [TEAMS]        3/6  4:12   [] 87%   |
-+----------------------------------------------------------+
-|  5-hour window                    42%   resets 2h 30m     |
-|  ############...........          On pace                 |
-| --------------------------------------------------------- |
-|  Weekly                           61%   resets 3d 5h      |
-|  ##################.....          Under pace              |
-+----------------------------------------------------------+
-```
+<table>
+<tr>
+<td><img src="images/3388.jpg" width="280" alt="Claude personal Pro plan on the device"></td>
+<td><img src="images/3389.jpg" width="280" alt="Claude Teams organization on the device"></td>
+<td><img src="images/3387.jpg" width="280" alt="Codex Plus plan on the device"></td>
+</tr>
+<tr>
+<td align="center">Claude · personal (Pro)</td>
+<td align="center">Claude · Teams</td>
+<td align="center">Codex · Plus</td>
+</tr>
+</table>
 
 ## What it does
 
