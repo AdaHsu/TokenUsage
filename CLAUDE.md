@@ -164,6 +164,28 @@ not happen just from opening the page. Provisioning's captive portal, by
 contrast, scans immediately on open since there is no existing connection to
 disturb.
 
+## Logo
+
+`images/Logo.png` is the source image. `scripts/gen_logo.ps1` regenerates
+both embedded copies whenever it changes - there is no build-time step for
+this, the generated headers are checked in like any other source file:
+
+- `src/web/logo_png.h` - 128x128 PNG, served at `GET /logo.png`
+  (`WebUi::registerLogoRoute()`, called once by each WebServer). `brand()`
+  references it as a plain `<img>` rather than re-embedding the bytes on
+  every page render.
+- `src/ui/logo_bitmap.h` - 72x72 RGB565, drawn once by `Screens::splash()`
+  right after `Display::setRotation()` in `setup()`. Pre-blended against
+  `Ui::COLOR_BG` at generation time, since RGB565 carries no alpha channel -
+  regenerate through the script (which does this blending) rather than
+  hand-rolling a different conversion, or the glow/rounded edges will pick
+  up a hard color-key fringe.
+
+The script uses .NET's `System.Drawing` via `pwsh`, not ImageMagick/PIL/
+ffmpeg - none of those were available in the environment this was built in.
+If that's no longer true, the script doesn't need to change on that account
+alone.
+
 ## Researched, not built
 
 Two things were investigated in depth and deliberately not implemented -

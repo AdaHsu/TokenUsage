@@ -641,6 +641,7 @@ void WebConfig::begin(DeviceSettings* settings, Carousel* carousel, const Hooks&
     wheel = carousel;
     hooks = h;
 
+    WebUi::registerLogoRoute(server);
     server.on("/",                  HTTP_GET,  handleRoot);
     server.on("/account/new",       HTTP_GET,  handleAccountNew);
     server.on("/account/edit",      HTTP_GET,  handleAccountEdit);

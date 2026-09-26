@@ -47,4 +47,9 @@ void sleepArmed(const char* title, int secondsLeft, const char* subtitle);
 void deepSleep();
 void resetting();
 
+// Logo, briefly, right after Display::begin() and before anything WiFi- or
+// account-related has a chance to draw. Purely decorative - never blocks on
+// anything, the caller decides how long it stays up.
+void splash();
+
 }  // namespace Screens

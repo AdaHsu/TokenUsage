@@ -1,16 +1,10 @@
 #include "webui.h"
 #include "../core/provider.h"  // htmlEscape()
+#include "logo_png.h"
 
 const char WebUi::HEAD_META[] =
     "<meta charset=utf-8>"
     "<meta name=viewport content=\"width=device-width,initial-scale=1\">";
-
-const char WebUi::ICON_SVG[] =
-    "<svg width=26 height=26 viewBox=\"0 0 24 24\" fill=none>"
-    "<rect x=2 y=4 width=20 height=16 rx=3 stroke=\"#5aaaff\" stroke-width=1.6/>"
-    "<rect x=5 y=9 width=9 height=2.4 rx=1.2 fill=\"#d97757\"/>"
-    "<rect x=5 y=13 width=14 height=2.4 rx=1.2 fill=\"#10a37f\"/>"
-    "</svg>";
 
 const char WebUi::STYLES[] =
     ":root{color-scheme:dark}"
@@ -74,7 +68,7 @@ String WebUi::page(const String& title, const String& body) {
 
 String WebUi::brand(const char* badge) {
     String s = "<div class=brand>";
-    s += ICON_SVG;
+    s += "<img src=/logo.png width=26 height=26 alt=\"\">";
     s += "<h1>TokenUsage</h1>";
     if (badge) {
         s += "<span class=badge>";
@@ -94,6 +88,12 @@ String WebUi::jsEscape(const String& s) {
         out += c;
     }
     return out;
+}
+
+void WebUi::registerLogoRoute(WebServer& server) {
+    server.on("/logo.png", HTTP_GET, [&server]() {
+        server.send_P(200, "image/png", (const char*)LOGO_PNG, LOGO_PNG_LEN);
+    });
 }
 
 String WebUi::wifiChips(const std::vector<ScannedNetwork>& nets, const char* targetInputId) {

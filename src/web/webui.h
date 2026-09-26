@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include <WebServer.h>
 #include "../net/wifi_scan.h"
 
 // Shared chrome for both web surfaces. Everything is inline and hand-rolled:
@@ -8,7 +9,6 @@
 namespace WebUi {
     extern const char HEAD_META[];
     extern const char STYLES[];
-    extern const char ICON_SVG[];
 
     String page(const String& title, const String& body);
     String brand(const char* badge = nullptr);
@@ -26,4 +26,10 @@ namespace WebUi {
     // Returns an empty string when nets is empty; the caller supplies its
     // own "nothing found" message for that case.
     String wifiChips(const std::vector<ScannedNetwork>& nets, const char* targetInputId);
+
+    // Registers GET /logo.png against the given server, serving the embedded
+    // PNG straight from flash. brand() references it as a plain <img>, so
+    // every page that calls brand() needs this route registered once on its
+    // WebServer - both provisioning and the admin page do their own setup.
+    void registerLogoRoute(WebServer& server);
 }

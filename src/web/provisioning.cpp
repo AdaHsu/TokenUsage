@@ -123,6 +123,7 @@ DeviceSettings Provisioning::run(const DeviceSettings& current) {
     // Answer every lookup with our own address so phones pop the portal.
     dns.start(53, "*", ip);
 
+    WebUi::registerLogoRoute(server);
     server.on("/", HTTP_GET, handleRoot);
     server.on("/rescan", HTTP_GET, handleRescan);
     server.on("/save", HTTP_POST, handleSave);

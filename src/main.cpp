@@ -470,6 +470,8 @@ void setup() {
 
     Settings::load(cfg);
     Display::setRotation(cfg.rotation);
+    Screens::splash();
+    delay(700);
 
     // Account credentials live on LittleFS, not NVS - mount it (formatting on
     // first boot) before anything tries to read the account list.

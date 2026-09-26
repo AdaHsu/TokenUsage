@@ -4,6 +4,7 @@
 #include "../hal/battery.h"
 #include "../hal/board.h"
 #include "../util/timefmt.h"
+#include "logo_bitmap.h"
 
 namespace {
 
@@ -314,5 +315,15 @@ void Screens::resetting() {
     g.setTextDatum(MC_DATUM);
     g.setTextColor(Ui::COLOR_DANGER, Ui::COLOR_BG);
     g.drawString("Factory reset", g.width() / 2, g.height() / 2, 4);
+    Display::endDirect();
+}
+
+void Screens::splash() {
+    TFT_eSPI& g = Display::beginDirect();
+    int x = (g.width()  - LOGO_BITMAP_W) / 2;
+    int y = (g.height() - LOGO_BITMAP_H) / 2;
+    // On ESP32, flash is memory-mapped, so pushImage reads straight out of
+    // the PROGMEM array with no separate copy step.
+    g.pushImage(x, y, LOGO_BITMAP_W, LOGO_BITMAP_H, LOGO_BITMAP);
     Display::endDirect();
 }
