@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/Logo.png" width="120" alt="TokenUsage logo">
+</p>
+
 # TokenUsage
 
 English | [正體中文](README.zh-TW.md)
